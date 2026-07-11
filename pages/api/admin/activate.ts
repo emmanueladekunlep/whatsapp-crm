@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../../database/db';
+import { supabase } from '../../../lib/supabase';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -18,24 +18,22 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     expiryDate.setMonth(expiryDate.getMonth() + months);
   }
 
-  const stmt = db.prepare(`
-    UPDATE users 
-    SET is_active = ?,
-        expiry_date = ?,
-        activated_by = 'admin'
-    WHERE id = ?
-  `);
+  const { error } = await supabase
+    .from('users')
+    .update({ 
+      is_active: months && months > 0 ? 1 : 0,
+      expiry_date: expiryDate?.toISOString() || null,
+      activated_by: 'admin'
+    })
+    .eq('id', userId);
 
-  const isActive = months && months > 0 ? 1 : 0;
-  const result = stmt.run(isActive, expiryDate?.toISOString() || null, userId);
-
-  if (result.changes > 0) {
-    res.status(200).json({ 
-      success: true, 
-      message: isActive ? 'User activated successfully' : 'User deactivated successfully',
-      expiryDate: expiryDate?.toISOString() || null
-    });
-  } else {
-    res.status(400).json({ error: 'User not found' });
+  if (error) {
+    return res.status(500).json({ error: 'Failed to update user' });
   }
+
+  res.status(200).json({ 
+    success: true, 
+    message: months && months > 0 ? 'User activated successfully' : 'User deactivated successfully',
+    expiryDate: expiryDate?.toISOString() || null
+  });
 }

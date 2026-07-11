@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../../database/db';
+import { supabase } from '../../../lib/supabase';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = 'your-secret-key-change-this-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   
   if (!token) {
@@ -16,15 +16,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const userId = decoded.id;
 
     if (req.method === 'GET') {
-      const stmt = db.prepare(`
-        SELECT q.*, c.name as customer_name 
-        FROM quotes q
-        JOIN customers c ON q.customer_id = c.id
-        WHERE q.user_id = ?
-        ORDER BY q.created_at DESC
-      `);
-      const quotes = stmt.all(userId);
-      return res.status(200).json(quotes);
+      const { data: quotes, error } = await supabase
+        .from('quotes')
+        .select(`
+          *,
+          customers (name)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return res.status(500).json({ error: 'Failed to fetch quotes' });
+      }
+
+      // Format the response
+      const formatted = quotes.map(q => ({
+        ...q,
+        customer_name: q.customers?.name || 'Unknown'
+      }));
+
+      return res.status(200).json(formatted);
     }
 
     if (req.method === 'POST') {
@@ -34,13 +45,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         return res.status(400).json({ error: 'Customer and amount required' });
       }
 
-      const stmt = db.prepare(`
-        INSERT INTO quotes (user_id, customer_id, amount, description, status)
-        VALUES (?, ?, ?, ?, ?)
-      `);
+      const { data, error } = await supabase
+        .from('quotes')
+        .insert([{ 
+          user_id: userId, 
+          customer_id: customerId, 
+          amount, 
+          description: description || '', 
+          status: status || 'pending' 
+        }])
+        .select();
 
-      const result = stmt.run(userId, customerId, amount, description || '', status || 'pending');
-      return res.status(201).json({ success: true, message: 'Quote added', id: result.lastInsertRowid });
+      if (error) {
+        return res.status(500).json({ error: 'Failed to add quote' });
+      }
+
+      return res.status(201).json({ 
+        success: true, 
+        message: 'Quote added',
+        id: data[0].id 
+      });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

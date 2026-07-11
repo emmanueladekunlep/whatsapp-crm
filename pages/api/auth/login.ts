@@ -1,11 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../../database/db';
+import { supabase } from '../../../lib/supabase';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = 'your-secret-key-change-this-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -16,13 +16,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ error: 'Email and password required' });
   }
 
-  // Get user from database
-  const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-  const user = stmt.get(email);
+  // Get user from Supabase
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email);
 
-  if (!user) {
+  if (error || !users || users.length === 0) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
+
+  const user = users[0];
 
   // Check password
   const isValid = bcrypt.compareSync(password, user.password);

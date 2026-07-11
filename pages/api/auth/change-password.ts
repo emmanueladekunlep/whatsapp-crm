@@ -1,16 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../../database/db';
+import { supabase } from '../../../lib/supabase';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = 'your-secret-key-change-this-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Get token from header
   const token = req.headers.authorization?.replace('Bearer ', '');
   
   if (!token) {
@@ -31,13 +30,17 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'New password must be at least 6 characters' });
     }
 
-    // Get user from database
-    const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
-    const user = stmt.get(userId);
+    // Get user from Supabase
+    const { data: users, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId);
 
-    if (!user) {
+    if (fetchError || !users || users.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
+
+    const user = users[0];
 
     // Verify current password
     const isValid = bcrypt.compareSync(currentPassword, user.password);
@@ -49,8 +52,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const hashedPassword = bcrypt.hashSync(newPassword, 10);
 
     // Update password
-    const updateStmt = db.prepare('UPDATE users SET password = ? WHERE id = ?');
-    updateStmt.run(hashedPassword, userId);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ password: hashedPassword })
+      .eq('id', userId);
+
+    if (updateError) {
+      return res.status(500).json({ error: 'Failed to update password' });
+    }
 
     res.status(200).json({ success: true, message: 'Password changed successfully' });
   } catch (error) {

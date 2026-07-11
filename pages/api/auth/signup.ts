@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../../database/db';
+import { supabase } from '../../../lib/supabase';
 import bcrypt from 'bcryptjs';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,10 +14,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   // Check if user already exists
-  const checkStmt = db.prepare('SELECT id FROM users WHERE email = ?');
-  const existing = checkStmt.get(email);
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', email);
 
-  if (existing) {
+  if (existing && existing.length > 0) {
     return res.status(400).json({ error: 'Email already registered' });
   }
 
@@ -25,16 +27,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   // Insert user (inactive by default)
-  const stmt = db.prepare(`
-    INSERT INTO users (email, password, business_name, phone, is_active)
-    VALUES (?, ?, ?, ?, 0)
-  `);
+  const { data, error } = await supabase
+    .from('users')
+    .insert([
+      { 
+        email, 
+        password: hashedPassword, 
+        business_name, 
+        phone: phone || '',
+        is_active: 0 
+      }
+    ])
+    .select();
 
-  const result = stmt.run(email, hashedPassword, business_name, phone || '');
+  if (error) {
+    return res.status(500).json({ error: 'Failed to create account' });
+  }
 
   res.status(201).json({
     success: true,
     message: 'Account created. Contact admin to activate.',
-    userId: result.lastInsertRowid
+    userId: data[0].id
   });
 }

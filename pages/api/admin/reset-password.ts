@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../../database/db';
+import { supabase } from '../../../lib/supabase';
 import bcrypt from 'bcryptjs';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -17,23 +17,19 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
-  // Hash new password
   const hashedPassword = bcrypt.hashSync(newPassword, 10);
 
-  const stmt = db.prepare(`
-    UPDATE users 
-    SET password = ?
-    WHERE id = ?
-  `);
+  const { error } = await supabase
+    .from('users')
+    .update({ password: hashedPassword })
+    .eq('id', userId);
 
-  const result = stmt.run(hashedPassword, userId);
-
-  if (result.changes > 0) {
-    res.status(200).json({ 
-      success: true, 
-      message: 'Password reset successfully'
-    });
-  } else {
-    res.status(400).json({ error: 'User not found' });
+  if (error) {
+    return res.status(500).json({ error: 'Failed to reset password' });
   }
+
+  res.status(200).json({ 
+    success: true, 
+    message: 'Password reset successfully'
+  });
 }
