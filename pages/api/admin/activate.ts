@@ -18,12 +18,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     expiryDate.setMonth(expiryDate.getMonth() + months);
   }
 
+  // Only update is_active and expiry_date - DON'T set activated_by
   const { error } = await supabase
     .from('users')
     .update({ 
       is_active: months && months > 0 ? 1 : 0,
-      expiry_date: expiryDate?.toISOString() || null,
-      activated_by: 'admin'
+      expiry_date: expiryDate?.toISOString() || null
+      // REMOVED: activated_by: 'admin' - this was making everyone admin!
     })
     .eq('id', userId);
 

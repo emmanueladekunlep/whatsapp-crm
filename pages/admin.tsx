@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 interface User {
   id: number;
@@ -11,12 +12,27 @@ interface User {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    fetchUsers();
+    // Check if user is admin (only your email)
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      if (user.email === 'emmanueladekunlep@gmail.com') {
+        setIsAuthorized(true);
+        fetchUsers();
+      } else {
+        // Not admin - redirect to dashboard
+        router.push('/dashboard');
+      }
+    } else {
+      router.push('/login');
+    }
   }, []);
 
   const fetchUsers = async () => {
@@ -77,6 +93,10 @@ export default function AdminDashboard() {
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
+
+  if (!isAuthorized) {
+    return <div className="p-8 text-center">Access denied. Redirecting...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -150,7 +170,6 @@ export default function AdminDashboard() {
                         Deactivate
                       </button>
                     )}
-                    {/* Reset Password Button - Always Visible */}
                     <button 
                       onClick={() => resetPassword(user.id)}
                       className="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600"
@@ -165,9 +184,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="mt-6 text-sm text-gray-500">
-          <p>🔑 Default Admin Login: admin@yourcrm.com / admin123</p>
+          <p>🔑 Admin: emmanueladekunlep@gmail.com</p>
           <p className="mt-1">💡 To activate a user: They pay → You click 1M/3M/1Y → They get access</p>
-          <p className="mt-1">🔐 To reset password: Click "Reset PW" → Enter new password → Send to user</p>
+          <p className="mt-1">📱 Admin Contact: 07032977572</p>
         </div>
       </div>
     </div>

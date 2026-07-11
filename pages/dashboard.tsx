@@ -97,6 +97,8 @@ export default function Dashboard() {
           {!user?.is_active && (
             <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg">
               ⚠️ Your account is inactive. Contact admin to activate.
+              <br />
+              <span className="text-sm font-semibold">📱 Admin: 07032977572</span>
             </div>
           )}
         </div>
@@ -188,10 +190,12 @@ export default function Dashboard() {
           </ul>
         </div>
 
-        {/* Admin Link */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>🔑 Admin Panel: <Link href="/admin" className="text-blue-500 hover:underline">/admin</Link></p>
-        </div>
+        {/* Admin Link - Only show for YOUR email */}
+        {user?.email === 'emmanueladekunlep@gmail.com' && (
+          <div className="mt-8 text-center text-sm text-gray-500">
+            <p>🔑 Admin Panel: <Link href="/admin" className="text-blue-500 hover:underline">/admin</Link></p>
+          </div>
+        )}
       </div>
     </div>
   );
