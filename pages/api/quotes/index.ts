@@ -18,10 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'GET') {
       const { data: quotes, error } = await supabase
         .from('quotes')
-        .select(`
-          *,
-          customers (name)
-        `)
+        .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -29,13 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Failed to fetch quotes' });
       }
 
-      // Format the response
-      const formatted = quotes.map((q: any) => ({
-        ...q,
-        customer_name: q.customers?.name || 'Unknown'
-      }));
-
-      return res.status(200).json(formatted);
+      return res.status(200).json(quotes);
     }
 
     if (req.method === 'POST') {

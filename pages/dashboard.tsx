@@ -7,8 +7,6 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [customerCount, setCustomerCount] = useState(0);
-  const [reminderCount, setReminderCount] = useState(0);
-  const [quoteCount, setQuoteCount] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -19,19 +17,21 @@ export default function Dashboard() {
       return;
     }
 
-    setUser(JSON.parse(userData));
-    fetchCounts(token);
+    const parsedUser = JSON.parse(userData);
+    setUser(parsedUser);
+    
+    // Fetch customer count
+    fetchCustomerCount(token);
     setLoading(false);
   }, []);
 
-  const fetchCounts = async (token: string) => {
+  const fetchCustomerCount = async (token: string) => {
     try {
-      // Get customers count
-      const customersRes = await fetch('/api/customers', {
+      const res = await fetch('/api/customers', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (customersRes.ok) {
-        const data = await customersRes.json();
+      if (res.ok) {
+        const data = await res.json();
         setCustomerCount(data.length);
       }
     } catch (error) {
@@ -117,7 +117,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-gray-500 text-sm">Reminders</h3>
-                <p className="text-3xl font-bold text-gray-800">{reminderCount}</p>
+                <p className="text-3xl font-bold text-gray-800">0</p>
               </div>
               <div className="text-4xl">⏰</div>
             </div>
@@ -127,7 +127,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-gray-500 text-sm">Quotes</h3>
-                <p className="text-3xl font-bold text-gray-800">{quoteCount}</p>
+                <p className="text-3xl font-bold text-gray-800">0</p>
               </div>
               <div className="text-4xl">💰</div>
             </div>

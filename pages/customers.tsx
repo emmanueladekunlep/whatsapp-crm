@@ -54,6 +54,11 @@ export default function Customers() {
     setError('');
     setMessage('');
 
+    if (!formData.name || formData.name.trim() === '') {
+      setError('Customer name is required');
+      return;
+    }
+
     const token = localStorage.getItem('token');
     const res = await fetch('/api/customers', {
       method: 'POST',
@@ -61,7 +66,12 @@ export default function Customers() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(formData)
+      body: JSON.stringify({
+        name: formData.name.trim(),
+        phone: formData.phone || '',
+        email: formData.email || '',
+        notes: formData.notes || ''
+      })
     });
 
     const data = await res.json();
@@ -125,6 +135,12 @@ export default function Customers() {
           </div>
         )}
 
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+
         {customers.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
             <div className="text-6xl mb-4">👤</div>
@@ -150,7 +166,7 @@ export default function Customers() {
                     <td className="px-6 py-4">{customer.phone || '-'}</td>
                     <td className="px-6 py-4">{customer.email || '-'}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {customer.notes ? customer.notes.substring(0, 30) + '...' : '-'}
+                      {customer.notes ? customer.notes.substring(0, 30) + (customer.notes.length > 30 ? '...' : '') : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(customer.created_at).toLocaleDateString()}
@@ -185,6 +201,7 @@ export default function Customers() {
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Enter customer name"
                     required
                   />
                 </div>
@@ -199,6 +216,7 @@ export default function Customers() {
                     value={formData.phone}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="08012345678"
                   />
                 </div>
 
@@ -212,6 +230,7 @@ export default function Customers() {
                     value={formData.email}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="customer@email.com"
                   />
                 </div>
 

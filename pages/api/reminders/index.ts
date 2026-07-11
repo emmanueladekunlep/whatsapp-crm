@@ -18,10 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'GET') {
       const { data: reminders, error } = await supabase
         .from('reminders')
-        .select(`
-          *,
-          customers (name)
-        `)
+        .select('*')
         .eq('user_id', userId)
         .order('due_date', { ascending: true });
 
@@ -29,13 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Failed to fetch reminders' });
       }
 
-      // Format the response
-      const formatted = reminders.map((r: any) => ({
-        ...r,
-        customer_name: r.customers?.name || 'Unknown'
-      }));
-
-      return res.status(200).json(formatted);
+      return res.status(200).json(reminders);
     }
 
     if (req.method === 'POST') {

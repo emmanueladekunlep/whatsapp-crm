@@ -13,40 +13,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Email, password, and business name required' });
   }
 
-  // Check if user already exists
-  const { data: existing } = await supabase
-    .from('users')
-    .select('id')
-    .eq('email', email);
+  try {
+    // Check if user already exists
+    const { data: existing, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email);
 
-  if (existing && existing.length > 0) {
-    return res.status(400).json({ error: 'Email already registered' });
-  }
+    if (checkError) {
+      console.error('Check error:', checkError);
+      return res.status(500).json({ error: 'Database error' });
+    }
 
-  // Hash password
-  const hashedPassword = bcrypt.hashSync(password, 10);
+    if (existing && existing.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
 
-  // Insert user (inactive by default)
-  const { data, error } = await supabase
-    .from('users')
-    .insert([
-      { 
+    // Hash password
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    // Insert user (inactive by default)
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{ 
         email, 
         password: hashedPassword, 
         business_name, 
         phone: phone || '',
         is_active: 0 
-      }
-    ])
-    .select();
+      }])
+      .select();
 
-  if (error) {
-    return res.status(500).json({ error: 'Failed to create account' });
+    if (error) {
+      console.error('Insert error:', error);
+      return res.status(500).json({ error: 'Failed to create account' });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created. Contact admin to activate.',
+      userId: data?.[0]?.id || null
+    });
+  } catch (error: any) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
-
-  res.status(201).json({
-    success: true,
-    message: 'Account created. Contact admin to activate.',
-    userId: data[0].id
-  });
 }

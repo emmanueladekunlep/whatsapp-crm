@@ -16,75 +16,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userId = decoded.id;
 
     if (req.method === 'GET') {
-      const { data: reminders, error } = await supabase
-        .from('reminders')
-        .select(`
-          *,
-          customers (name)
-        `)
+      const { data: customers, error } = await supabase
+        .from('customers')
+        .select('*')
         .eq('user_id', userId)
-        .order('due_date', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (error) {
-        return res.status(500).json({ error: 'Failed to fetch reminders' });
+        return res.status(500).json({ error: 'Failed to fetch customers' });
       }
 
-      // Format the response
-      const formatted = reminders.map(r => ({
-        ...r,
-        customer_name: r.customers?.name || 'Unknown'
-      }));
-
-      return res.status(200).json(formatted);
+      return res.status(200).json(customers);
     }
 
     if (req.method === 'POST') {
-      const { customerId, title, description, due_date } = req.body;
+      const { name, phone, email, notes } = req.body;
 
-      if (!customerId || !title || !due_date) {
-        return res.status(400).json({ error: 'Customer, title, and due date required' });
+      if (!name || name.trim() === '') {
+        return res.status(400).json({ error: 'Customer name is required' });
       }
 
       const { data, error } = await supabase
-        .from('reminders')
+        .from('customers')
         .insert([{ 
           user_id: userId, 
-          customer_id: customerId, 
-          title, 
-          description: description || '', 
-          due_date 
+          name: name.trim(), 
+          phone: phone || '', 
+          email: email || '', 
+          notes: notes || '' 
         }])
         .select();
 
       if (error) {
-        return res.status(500).json({ error: 'Failed to add reminder' });
+        console.error('Supabase error:', error);
+        return res.status(500).json({ error: 'Failed to add customer: ' + error.message });
       }
 
       return res.status(201).json({ 
         success: true, 
-        message: 'Reminder added',
-        id: data[0].id 
+        message: 'Customer added successfully',
+        id: data[0].id
       });
     }
 
-    if (req.method === 'PUT') {
-      const { id, is_done } = req.body;
-
-      const { error } = await supabase
-        .from('reminders')
-        .update({ is_done })
-        .eq('id', id)
-        .eq('user_id', userId);
-
-      if (error) {
-        return res.status(500).json({ error: 'Failed to update reminder' });
-      }
-
-      return res.status(200).json({ success: true, message: 'Reminder updated' });
-    }
-
     return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+  } catch (error: any) {
+    console.error('Error:', error);
+    return res.status(401).json({ error: 'Invalid token or server error' });
   }
 }
