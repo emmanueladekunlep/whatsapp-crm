@@ -8,11 +8,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showAdminContact, setShowAdminContact] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setShowAdminContact(false);
 
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -28,6 +30,10 @@ export default function Login() {
       router.push('/dashboard');
     } else {
       setError(data.error || 'Login failed');
+      // Show admin contact if account is inactive
+      if (data.inactive) {
+        setShowAdminContact(true);
+      }
     }
     setLoading(false);
   };
@@ -62,6 +68,16 @@ export default function Login() {
           </div>
         )}
 
+        {showAdminContact && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg mb-4">
+            <p className="text-sm text-yellow-800 font-semibold">
+              📱 Contact admin to activate your account:
+            </p>
+            <p className="text-lg font-bold text-yellow-900 mt-1">07032977572</p>
+            <p className="text-xs text-yellow-700 mt-1">WhatsApp or Call</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
@@ -87,7 +103,6 @@ export default function Login() {
             />
           </div>
 
-          {/* Forgot Password Link */}
           <div className="text-right mb-4">
             <Link href="/forgot-password" className="text-sm text-green-600 hover:text-green-700 hover:underline">
               Forgot password?
