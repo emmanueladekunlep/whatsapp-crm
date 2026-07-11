@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Format the response
-      const formatted = quotes.map(q => ({
+      const formatted = quotes.map((q: any) => ({
         ...q,
         customer_name: q.customers?.name || 'Unknown'
       }));
