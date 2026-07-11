@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import db from '../../../database/db';
+import { supabase } from '../../../lib/supabase';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = 'your-secret-key-change-this-in-production';
