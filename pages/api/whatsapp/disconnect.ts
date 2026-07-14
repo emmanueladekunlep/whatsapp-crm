@@ -1,11 +1,12 @@
- import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../lib/supabase';
 import jwt from 'jsonwebtoken';
+import { Client } from 'whatsapp-web.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 declare global {
-  var whatsappClients: Map<number, any>;
+  var whatsappClients: Map<number, Client>;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
