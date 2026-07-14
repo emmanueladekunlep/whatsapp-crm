@@ -1,8 +1,3 @@
-You're right. Let me give you the complete updated `quotes.tsx` file.
-
-Open `pages\quotes.tsx` and replace everything with this:
-
-```typescript
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -17,12 +12,19 @@ interface Quote {
   created_at: string;
 }
 
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+}
+
 export default function Quotes() {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [formData, setFormData] = useState({
     customerId: '',
     amount: '',
@@ -101,7 +103,6 @@ export default function Quotes() {
   const sendQuoteViaWhatsApp = async (quote: any) => {
     const token = localStorage.getItem('token');
     
-    // Get customer phone
     const customer = customers.find(c => c.id === quote.customer_id);
     if (!customer || !customer.phone) {
       alert('❌ Customer has no phone number');
@@ -334,6 +335,3 @@ export default function Quotes() {
     </div>
   );
 }
-```
-
-Tell me when done.
