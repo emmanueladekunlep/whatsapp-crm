@@ -1,3 +1,4 @@
+ 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -42,7 +43,7 @@ export default function QuotesPage() {
     }
     fetchQuotes();
     fetchCustomers();
-  }, [router]);
+  }, []);
 
   const fetchQuotes = async () => {
     const token = localStorage.getItem('token');
@@ -137,7 +138,7 @@ export default function QuotesPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return React.createElement('div', { className: 'min-h-screen flex items-center justify-center' }, 'Loading...');
   }
 
   const statusColors: Record<string, string> = {
