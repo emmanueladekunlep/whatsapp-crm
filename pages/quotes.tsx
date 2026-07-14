@@ -1,3 +1,8 @@
+You're right. Let me give you the complete updated `quotes.tsx` file.
+
+Open `pages\quotes.tsx` and replace everything with this:
+
+```typescript
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -93,6 +98,39 @@ export default function Quotes() {
     }
   };
 
+  const sendQuoteViaWhatsApp = async (quote: any) => {
+    const token = localStorage.getItem('token');
+    
+    // Get customer phone
+    const customer = customers.find(c => c.id === quote.customer_id);
+    if (!customer || !customer.phone) {
+      alert('❌ Customer has no phone number');
+      return;
+    }
+
+    const message = `📄 *QUOTE*\n\nCustomer: ${customer.name}\nAmount: $${quote.amount}\nDescription: ${quote.description}\nStatus: ${quote.status}\n\nThank you for your business!`;
+
+    const res = await fetch('/api/whatsapp/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        phoneNumber: customer.phone,
+        message: message,
+        customerId: customer.id
+      })
+    });
+
+    if (res.ok) {
+      alert('✅ Quote sent via WhatsApp!');
+    } else {
+      const data = await res.json();
+      alert('❌ Failed to send: ' + (data.error || 'Unknown error'));
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -163,6 +201,7 @@ export default function Quotes() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -178,6 +217,14 @@ export default function Quotes() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {new Date(quote.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => sendQuoteViaWhatsApp(quote)}
+                        className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600"
+                      >
+                        📱 Send WhatsApp
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -287,3 +334,6 @@ export default function Quotes() {
     </div>
   );
 }
+```
+
+Tell me when done.

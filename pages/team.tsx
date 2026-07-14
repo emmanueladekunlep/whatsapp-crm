@@ -1,26 +1,26 @@
-import { useState, useEffect } from 'react';
+ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
-interface Customer {
+interface TeamMember {
   id: number;
-  name: string;
-  phone: string;
   email: string;
-  notes: string;
+  name: string;
+  role: string;
+  is_active: boolean;
   created_at: string;
 }
 
-export default function Customers() {
+export default function TeamPage() {
   const router = useRouter();
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
     email: '',
-    notes: ''
+    name: '',
+    role: 'member',
+    password: ''
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -31,53 +31,19 @@ export default function Customers() {
       router.push('/login');
       return;
     }
-    fetchCustomers();
+    fetchMembers();
   }, []);
 
-  const fetchCustomers = async () => {
+  const fetchMembers = async () => {
     const token = localStorage.getItem('token');
-    const res = await fetch('/api/customers', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+    const res = await fetch('/api/team', {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-    
     if (res.ok) {
       const data = await res.json();
-      setCustomers(data);
+      setMembers(data);
     }
     setLoading(false);
-  };
-
-  const sendMessageToCustomer = async (customer: any) => {
-    if (!customer.phone) {
-      alert('❌ Customer has no phone number');
-      return;
-    }
-
-    const message = prompt(`Enter message to send to ${customer.name}:`);
-    if (!message) return;
-
-    const token = localStorage.getItem('token');
-    const res = await fetch('/api/whatsapp/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        phoneNumber: customer.phone,
-        message: message,
-        customerId: customer.id
-      })
-    });
-
-    if (res.ok) {
-      alert('✅ Message sent via WhatsApp!');
-    } else {
-      const data = await res.json();
-      alert('❌ Failed to send: ' + (data.error || 'Unknown error'));
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,40 +51,69 @@ export default function Customers() {
     setError('');
     setMessage('');
 
-    if (!formData.name || formData.name.trim() === '') {
-      setError('Customer name is required');
-      return;
-    }
-
     const token = localStorage.getItem('token');
-    const res = await fetch('/api/customers', {
+    const res = await fetch('/api/team', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        name: formData.name.trim(),
-        phone: formData.phone || '',
-        email: formData.email || '',
-        notes: formData.notes || ''
-      })
+      body: JSON.stringify(formData)
     });
 
     const data = await res.json();
 
     if (res.ok) {
-      setMessage('✅ Customer added successfully!');
-      setFormData({ name: '', phone: '', email: '', notes: '' });
+      setMessage('✅ Team member added successfully!');
+      setFormData({ email: '', name: '', role: 'member', password: '' });
       setShowModal(false);
-      fetchCustomers();
+      fetchMembers();
       setTimeout(() => setMessage(''), 3000);
     } else {
-      setError(data.error || 'Failed to add customer');
+      setError(data.error || 'Failed to add member');
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const toggleStatus = async (id: number, currentStatus: boolean) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/team', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        id,
+        is_active: !currentStatus
+      })
+    });
+
+    if (res.ok) {
+      fetchMembers();
+    }
+  };
+
+  const removeMember = async (id: number) => {
+    if (!confirm('Are you sure you want to remove this team member?')) return;
+
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/team', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ id })
+    });
+
+    if (res.ok) {
+      fetchMembers();
+      setMessage('✅ Team member removed');
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -151,12 +146,12 @@ export default function Customers() {
 
       <div className="max-w-7xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">📋 My Customers</h2>
+          <h2 className="text-2xl font-bold">👥 Team Members</h2>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600"
           >
-            + Add Customer
+            + Add Member
           </button>
         </div>
 
@@ -166,17 +161,11 @@ export default function Customers() {
           </div>
         )}
 
-        {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
-
-        {customers.length === 0 ? (
+        {members.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="text-6xl mb-4">👤</div>
-            <h3 className="text-xl font-semibold mb-2">No Customers Yet</h3>
-            <p className="text-gray-500">Click "Add Customer" to start building your list</p>
+            <div className="text-6xl mb-4">👥</div>
+            <h3 className="text-xl font-semibold mb-2">No Team Members</h3>
+            <p className="text-gray-500">Add team members to collaborate</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-x-auto">
@@ -184,36 +173,47 @@ export default function Customers() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Added</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {customers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium">{customer.name}</td>
-                    <td className="px-6 py-4">{customer.phone || '-'}</td>
-                    <td className="px-6 py-4">{customer.email || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {customer.notes ? customer.notes.substring(0, 30) + (customer.notes.length > 30 ? '...' : '') : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(customer.created_at).toLocaleDateString()}
+                {members.map((member) => (
+                  <tr key={member.id}>
+                    <td className="px-6 py-4 font-medium">{member.name}</td>
+                    <td className="px-6 py-4 text-sm">{member.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        member.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {member.role}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        member.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {member.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 space-x-1">
                       <button
-                        onClick={() => sendMessageToCustomer(customer)}
+                        onClick={() => toggleStatus(member.id, member.is_active)}
                         className={`px-3 py-1 rounded text-xs ${
-                          customer.phone 
-                            ? 'bg-green-500 text-white hover:bg-green-600' 
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          member.is_active 
+                            ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
+                            : 'bg-green-500 text-white hover:bg-green-600'
                         }`}
-                        disabled={!customer.phone}
                       >
-                        📱 Send
+                        {member.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => removeMember(member.id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600"
+                      >
+                        Remove
                       </button>
                     </td>
                   </tr>
@@ -223,11 +223,10 @@ export default function Customers() {
           </div>
         )}
 
-        {/* Add Customer Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl p-8 w-full max-w-md">
-              <h3 className="text-xl font-bold mb-4">Add New Customer</h3>
+              <h3 className="text-xl font-bold mb-4">Add Team Member</h3>
               
               {error && (
                 <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4">
@@ -238,67 +237,68 @@ export default function Customers() {
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Customer Name *
+                    Full Name *
                   </label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Enter customer name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     required
                   />
                 </div>
 
                 <div className="mb-4">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="08012345678"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email
+                    Email *
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="customer@email.com"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    minLength={6}
+                    required
                   />
                 </div>
 
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Notes
+                    Role
                   </label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
+                  <select
+                    name="role"
+                    value={formData.role}
                     onChange={handleChange}
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Any notes about this customer..."
-                  />
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="member">Member</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+                    className="flex-1 bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600"
                   >
-                    Save Customer
+                    Add Member
                   </button>
                   <button
                     type="button"

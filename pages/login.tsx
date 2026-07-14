@@ -16,13 +16,28 @@ export default function Login() {
     setError('');
     setShowAdminContact(false);
 
-    const res = await fetch('/api/auth/login', {
+    // Try regular login first
+    let res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
 
-    const data = await res.json();
+    let data = await res.json();
+
+    // If regular login fails, try team login
+    if (!res.ok) {
+      const teamRes = await fetch('/api/auth/team-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      if (teamRes.ok) {
+        res = teamRes;
+        data = await teamRes.json();
+      }
+    }
 
     if (res.ok) {
       localStorage.setItem('token', data.token);
@@ -30,7 +45,6 @@ export default function Login() {
       router.push('/dashboard');
     } else {
       setError(data.error || 'Login failed');
-      // Show admin contact if account is inactive
       if (data.inactive) {
         setShowAdminContact(true);
       }
@@ -42,7 +56,6 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center gradient-bg">
       <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <div className="text-center mb-8">
-          {/* WhatsApp SVG Icon */}
           <svg 
             className="w-16 h-16 mx-auto mb-3"
             viewBox="0 0 24 24" 

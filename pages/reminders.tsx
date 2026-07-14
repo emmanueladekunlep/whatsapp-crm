@@ -9,6 +9,7 @@ interface Reminder {
   due_date: string;
   is_done: number;
   created_at: string;
+  customer_id: number;
 }
 
 export default function Reminders() {
@@ -115,6 +116,39 @@ export default function Reminders() {
     }
   };
 
+  const sendReminderViaWhatsApp = async (reminder: any) => {
+    const token = localStorage.getItem('token');
+    
+    // Get customer
+    const customer = customers.find(c => c.id === reminder.customer_id);
+    if (!customer || !customer.phone) {
+      alert('❌ Customer has no phone number');
+      return;
+    }
+
+    const message = `⏰ *REMINDER*\n\nCustomer: ${customer.name}\nTitle: ${reminder.title}\nDescription: ${reminder.description || 'No description'}\nDue: ${new Date(reminder.due_date).toLocaleDateString()}\n\nPlease follow up on this.`;
+
+    const res = await fetch('/api/whatsapp/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        phoneNumber: customer.phone,
+        message: message,
+        customerId: customer.id
+      })
+    });
+
+    if (res.ok) {
+      alert('✅ Reminder sent via WhatsApp!');
+    } else {
+      const data = await res.json();
+      alert('❌ Failed to send: ' + (data.error || 'Unknown error'));
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -180,16 +214,24 @@ export default function Reminders() {
                   <p className="text-sm text-gray-600">{reminder.description}</p>
                   <p className="text-xs text-gray-400">Due: {new Date(reminder.due_date).toLocaleDateString()}</p>
                 </div>
-                <button
-                  onClick={() => toggleDone(reminder.id, reminder.is_done)}
-                  className={`px-4 py-2 rounded-lg text-sm ${
-                    reminder.is_done 
-                      ? 'bg-gray-300 text-gray-700 hover:bg-gray-400' 
-                      : 'bg-green-500 text-white hover:bg-green-600'
-                  }`}
-                >
-                  {reminder.is_done ? 'Undo' : 'Done'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => sendReminderViaWhatsApp(reminder)}
+                    className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-600"
+                  >
+                    📱 Send
+                  </button>
+                  <button
+                    onClick={() => toggleDone(reminder.id, reminder.is_done)}
+                    className={`px-4 py-2 rounded-lg text-sm ${
+                      reminder.is_done 
+                        ? 'bg-gray-300 text-gray-700 hover:bg-gray-400' 
+                        : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                  >
+                    {reminder.is_done ? 'Undo' : 'Done'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

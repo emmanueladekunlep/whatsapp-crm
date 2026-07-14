@@ -77,7 +77,9 @@ export default function Profile() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold">📱 WhatsApp CRM</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">{user?.business_name}</span>
+            <span className="text-sm text-gray-600">
+              {user?.isTeamMember ? `${user?.name} (${user?.role})` : user?.business_name}
+            </span>
             <Link href="/dashboard" className="text-blue-500 hover:text-blue-600 text-sm">
               ← Back to Dashboard
             </Link>
@@ -100,11 +102,23 @@ export default function Profile() {
           <h2 className="text-2xl font-bold mb-6">👤 Profile Settings</h2>
 
           <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-            <p><strong>Business:</strong> {user?.business_name}</p>
-            <p><strong>Email:</strong> {user?.email}</p>
-            <p><strong>Status:</strong> {user?.is_active ? '✅ Active' : '❌ Inactive'}</p>
-            {user?.expiry_date && (
-              <p><strong>Expires:</strong> {new Date(user.expiry_date).toLocaleDateString()}</p>
+            {user?.isTeamMember ? (
+              <>
+                <p><strong>Name:</strong> {user?.name}</p>
+                <p><strong>Email:</strong> {user?.email}</p>
+                <p><strong>Role:</strong> {user?.role}</p>
+                <p><strong>Business:</strong> {user?.business_name}</p>
+                <p><strong>Status:</strong> {user?.is_active ? '✅ Active' : '❌ Inactive'}</p>
+              </>
+            ) : (
+              <>
+                <p><strong>Business:</strong> {user?.business_name}</p>
+                <p><strong>Email:</strong> {user?.email}</p>
+                <p><strong>Status:</strong> {user?.is_active ? '✅ Active' : '❌ Inactive'}</p>
+                {user?.expiry_date && (
+                  <p><strong>Expires:</strong> {new Date(user.expiry_date).toLocaleDateString()}</p>
+                )}
+              </>
             )}
           </div>
 
