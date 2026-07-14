@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 interface User {
@@ -19,7 +19,6 @@ export default function AdminDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // Check if user is admin (only your email)
     const userData = localStorage.getItem('user');
     if (userData) {
       const user = JSON.parse(userData);
@@ -27,7 +26,6 @@ export default function AdminDashboard() {
         setIsAuthorized(true);
         fetchUsers();
       } else {
-        // Not admin - redirect to dashboard
         router.push('/dashboard');
       }
     } else {
@@ -92,10 +90,12 @@ export default function AdminDashboard() {
     return new Date(date).toLocaleDateString();
   };
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (loading) {
+    return React.createElement('div', { className: 'p-8 text-center' }, 'Loading...');
+  }
 
   if (!isAuthorized) {
-    return <div className="p-8 text-center">Access denied. Redirecting...</div>;
+    return React.createElement('div', { className: 'p-8 text-center' }, 'Access denied. Redirecting...');
   }
 
   return (

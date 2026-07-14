@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Store clients globally to reuse
 declare global {
-  var whatsappClients: Map<number, Client>;
+  var whatsappClients: Map<number, any>;
 }
 if (!global.whatsappClients) {
   global.whatsappClients = new Map();
