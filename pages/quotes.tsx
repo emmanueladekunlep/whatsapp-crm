@@ -19,7 +19,7 @@ interface Customer {
   email: string;
 }
 
-export default function Quotes() {
+export default function QuotesPage() {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +100,7 @@ export default function Quotes() {
     }
   };
 
-  const sendQuoteViaWhatsApp = async (quote: any) => {
+  const sendQuoteViaWhatsApp = async (quote: Quote) => {
     const token = localStorage.getItem('token');
     
     const customer = customers.find(c => c.id === quote.customer_id);
