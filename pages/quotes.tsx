@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
@@ -42,7 +42,7 @@ export default function QuotesPage() {
     }
     fetchQuotes();
     fetchCustomers();
-  }, []);
+  }, [router]);
 
   const fetchQuotes = async () => {
     const token = localStorage.getItem('token');
@@ -109,7 +109,7 @@ export default function QuotesPage() {
       return;
     }
 
-    const message = `📄 *QUOTE*\n\nCustomer: ${customer.name}\nAmount: $${quote.amount}\nDescription: ${quote.description}\nStatus: ${quote.status}\n\nThank you for your business!`;
+    const messageText = `📄 *QUOTE*\n\nCustomer: ${customer.name}\nAmount: $${quote.amount}\nDescription: ${quote.description}\nStatus: ${quote.status}\n\nThank you for your business!`;
 
     const res = await fetch('/api/whatsapp/send', {
       method: 'POST',
@@ -119,7 +119,7 @@ export default function QuotesPage() {
       },
       body: JSON.stringify({
         phoneNumber: customer.phone,
-        message: message,
+        message: messageText,
         customerId: customer.id
       })
     });
@@ -137,7 +137,7 @@ export default function QuotesPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return React.createElement('div', { className: 'min-h-screen flex items-center justify-center' }, 'Loading...');
   }
 
   const statusColors: Record<string, string> = {
