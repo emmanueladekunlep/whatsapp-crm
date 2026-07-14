@@ -137,7 +137,7 @@ export default function QuotesPage() {
   };
 
   if (loading) {
-    return React.createElement('div', { className: 'min-h-screen flex items-center justify-center' }, 'Loading...');
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   const statusColors: Record<string, string> = {
